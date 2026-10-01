@@ -97,7 +97,7 @@
 
 <main id="main">
 <div id="tbar">▲ INIZIO PAGINA — prova:
-  <a href="?v=1">1 com'è ora</a><a href="?v=2">2 viewport-fit</a><a href="?v=3">3 senza animazioni</a><a href="?v=4">4 senza regole scroll</a><a href="?v=5">5 menu fixed</a></div>
+  <a href="?v=1">1 com'è ora</a><a href="?v=2">2 viewport-fit</a><a href="?v=3">3 senza animazioni</a><a href="?v=4">4 senza regole scroll</a><a href="?v=5">5 menu fixed</a><a href="?v=6">6 SENZA riquadro</a><a href="?v=7">7 correzione A</a><a href="?v=8">8 correzione B</a></div>
 <section class="hero">
   <div class="wrap">
     <div class="hero__grid">
@@ -312,6 +312,28 @@
 <script>
 document.querySelectorAll('#tbar a').forEach(function (a) { if (a.getAttribute('href') === '?v=' + window.__V) a.className = 'on'; });
 (function () { var r = document.getElementById('tread');
+  // 6, 7, 8: niente riquadro delle misure (e' l'unica cosa in piu' rispetto al sito vero)
+  if (window.__V === '6' || window.__V === '7' || window.__V === '8') {
+    r.remove();
+    if (window.__V === '7') {
+      // correzione A: elemento fisso invisibile aggiornato a ogni scroll/resize (come il riquadro, ma nascosto)
+      var g = document.createElement('div');
+      g.setAttribute('aria-hidden', 'true');
+      g.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden';
+      document.body.appendChild(g);
+      var n = 0, upd = function () { g.textContent = ++n; };
+      addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd);
+      if (window.visualViewport) { visualViewport.addEventListener('resize', upd); visualViewport.addEventListener('scroll', upd); }
+    }
+    if (window.__V === '8') {
+      // correzione B: quando la barra di Chrome cambia altezza, forza un ricalcolo del layout
+      var fix = function () { var de = document.documentElement; de.style.setProperty('--vvh', (window.visualViewport ? visualViewport.height : innerHeight) + 'px'); void de.offsetHeight; };
+      addEventListener('resize', fix);
+      if (window.visualViewport) visualViewport.addEventListener('resize', fix);
+      addEventListener('scroll', function () { if (scrollY < 200) fix(); }, { passive: true });
+    }
+    return;
+  }
   function u() { var vv = window.visualViewport; r.textContent = 'V' + window.__V + ' | y ' + Math.round(scrollY) + ' | inner ' + innerHeight + (vv ? ' | vvTop ' + Math.round(vv.offsetTop) + ' | vvH ' + Math.round(vv.height) : '') + ' | hdr ' + Math.round(document.querySelector('.site-header').getBoundingClientRect().top); }
   addEventListener('scroll', u, { passive: true }); addEventListener('resize', u); if (window.visualViewport) visualViewport.addEventListener('resize', u); setInterval(u, 500); u(); })();
 </script>

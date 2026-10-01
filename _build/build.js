@@ -10,7 +10,7 @@ const WA = '000 000 0000', WA_HREF = 'https://wa.me/390000000000';
 const EMAIL = 'segreteria@studiolumea.example';
 const ADDR = 'Via delle Calendule 12, 20145 Milano';
 const MAP_LINK = 'https://www.openstreetmap.org/?mlat=45.4679&amp;mlon=9.1560#map=17/45.4679/9.1560';
-const V = '12'; // cache-busting css/js
+const V = '19'; // cache-busting css/js
 // Indirizzo pubblico del sito (da compilare quando sarà online): serve per l'anteprima dei link (og:image vuole un URL assoluto)
 const SITE = 'https://chillguyzofficial-spec.github.io/StudioLumea_Dentistico/';
 
@@ -32,9 +32,17 @@ const NAV = [
   { id: 'home', label: 'Home', href: 'index.html' },
   { id: 'trattamenti', label: 'Trattamenti', href: 'trattamenti.html' },
   { id: 'studio', label: 'Lo studio e il team', href: 'studio.html' },
+  { id: 'guide', label: 'Guide', href: 'guide.html' },
   { id: 'contatti', label: 'Contatti', href: 'contatti.html' },
 ];
 const cur = (id, active) => (id === active ? ' aria-current="page"' : '');
+
+// Icone (disegnate per il sito, in _build/icons.js)
+const ICONS = require('./icons.js');
+const icon = (name, cls = '') => `<svg class="ico${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONS[name]}</svg>`;
+
+// Trattamenti: ognuno ha la sua pagina (slug.html). Testi verificati via ricerca web (S70, 2026-10-02).
+const TR = require('./trattamenti-dati.js');
 
 // Ogni foto ha 3 misure (800, 1400, originale): il browser scarica quella adatta allo schermo.
 // dimensioni lette direttamente dal file WebP (VP8X / VP8 / VP8L)
@@ -52,8 +60,10 @@ const img = (src, alt, { eager = false, sizes = '(max-width: 960px) 100vw, 50vw'
   return `<img src="${base}-1400.webp" srcset="${base}-800.webp 800w, ${base}-1400.webp 1400w, ${base}.webp ${w}w" sizes="${sizes}" alt="${alt}" width="${w}" height="${h}"${eager ? ' fetchpriority="high"' : ' loading="lazy"'} decoding="async">`;
 };
 const TEAM_SIZES = '(max-width: 700px) 100vw, 33vw';
+const GALLERY_SIZES = '(max-width: 860px) 100vw, 50vw';
+const TECH_SIZES = '(max-width: 700px) 100vw, 25vw';
 
-function page({ file, active, title, description, body, schema = false }) {
+function page({ file, active, title, description, body, schema = false, ld = [], activeTr = '' }) {
   const html = `<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -73,8 +83,8 @@ ${SITE ? `<meta property="og:url" content="${SITE}${file === 'index.html' ? '' :
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-` : ''}${schema ? `<script type="application/ld+json">${JSON.stringify(SCHEMA)}</script>
-` : ''}
+` : ''}${[...(schema ? [SCHEMA] : []), ...ld].map(o => `<script type="application/ld+json">${JSON.stringify(o)}</script>
+`).join('')}
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,11 +98,20 @@ ${SITE ? `<meta property="og:url" content="${SITE}${file === 'index.html' ? '' :
 <header class="site-header">
   <div class="header-in">
     <a class="brand" href="index.html">
-      <span class="brand__name">Studio Lumea</span>
-      <span class="brand__sub">Odontoiatria · Milano</span>
+      <span class="brand__mark">${icon('tooth')}</span>
+      <span class="brand__txt">
+        <span class="brand__name">Studio Lumea</span>
+        <span class="brand__sub">Odontoiatria · Milano</span>
+      </span>
     </a>
     <nav class="nav" aria-label="Menu principale">
-${NAV.map(l => `      <a class="nav__link" href="${l.href}"${cur(l.id, active)}>${l.label}</a>`).join('\n')}
+${NAV.map(l => l.id === 'trattamenti' ? `      <div class="nav__drop">
+        <a class="nav__link" href="${l.href}"${cur(l.id, active)}>${l.label}<svg class="nav__caret" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></a>
+        <div class="nav__panel">
+${TR.map(t => `          <a href="${t.slug}.html"${t.slug === activeTr ? ' aria-current="page"' : ''}>${icon(t.icon)}<span>${t.menu}</span></a>`).join('\n')}
+          <a class="nav__all" href="trattamenti.html">Tutti i trattamenti →</a>
+        </div>
+      </div>` : `      <a class="nav__link" href="${l.href}"${cur(l.id, active)}>${l.label}</a>`).join('\n')}
       <a class="nav__tel" href="${TEL_HREF}">${TEL}</a>
       <a class="btn btn--primary" href="contatti.html#prenota">Prenota una visita</a>
     </nav>
@@ -103,11 +122,14 @@ ${NAV.map(l => `      <a class="nav__link" href="${l.href}"${cur(l.id, active)}>
 </header>
 <div class="mobile-menu" id="mobile-menu" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Menu">
   <div class="mobile-menu__top">
-    <span class="brand__name">Studio Lumea</span>
+    <span class="brand"><span class="brand__mark">${icon('tooth')}</span><span class="brand__name">Studio Lumea</span></span>
     <button class="menu-toggle" type="button" data-menu-close>Chiudi</button>
   </div>
   <nav class="mobile-menu__nav" aria-label="Menu mobile">
-${NAV.map(l => `    <a href="${l.href}"${cur(l.id, active)} data-menu-close>${l.label}</a>`).join('\n')}
+${NAV.map(l => `    <a href="${l.href}"${cur(l.id, active)} data-menu-close>${l.label}</a>` + (l.id === 'trattamenti' ? `
+    <div class="mobile-menu__sub">
+${TR.map(t => `      <a href="${t.slug}.html"${t.slug === activeTr ? ' aria-current="page"' : ''} data-menu-close>${icon(t.icon)}${t.menu}</a>`).join('\n')}
+    </div>` : '')).join('\n')}
   </nav>
   <div class="mobile-menu__foot">
     <a class="btn btn--primary" href="contatti.html#prenota" data-menu-close>Prenota una visita</a>
@@ -131,7 +153,7 @@ ${body.trim()}
   <div class="footer-in">
     <div class="footer-cols">
       <div>
-        <span class="footer-brand">Studio Lumea</span>
+        <span class="footer-brand">${icon('tooth')}Studio Lumea</span>
         <p>Studio Odontoiatrico Lumea S.r.l.<br>${ADDR}</p>
       </div>
       <div>
@@ -145,9 +167,13 @@ ${body.trim()}
         <p>Lun–Ven 9:00–19:30<br>Sabato 9:00–13:00<br>Domenica chiuso</p>
       </div>
       <div>
+        <span class="footer-title">Trattamenti</span>
+${TR.map(t => `        <a href="${t.slug}.html">${t.menu}</a>`).join('\n')}
+      </div>
+      <div>
         <span class="footer-title">Pagine</span>
-        <a href="trattamenti.html">Trattamenti</a>
         <a href="studio.html">Lo studio e il team</a>
+        <a href="guide.html">Guide</a>
         <a href="contatti.html">Contatti e prenotazione</a>
       </div>
     </div>
@@ -170,19 +196,11 @@ ${body.trim()}
 }
 
 // ---------- HOME ----------
-const TREATMENTS = [
-  ['igiene', 'Igiene e prevenzione', 'Pulizia professionale, controllo delle gengive e consigli pratici per la cura quotidiana a casa.'],
-  ['conservativa', 'Conservativa', 'Cura della carie e ricostruzione dei denti danneggiati, cercando di conservare quanto più dente naturale possibile.'],
-  ['ortodonzia', 'Ortodonzia', 'Apparecchi fissi e allineatori trasparenti per bambini, ragazzi e adulti.'],
-  ['implantologia', 'Implantologia', 'Sostituzione di uno o più denti mancanti con impianti in titanio e corone fisse.'],
-  ['pedodonzia', 'Pedodonzia', 'Le prime visite dei bambini, la prevenzione della carie e la cura dei denti da latte.'],
-  ['estetica', 'Estetica dentale', 'Sbiancamento professionale e faccette, valutati dopo una visita e solo se indicati.'],
-];
 const URGENT = `<aside class="urgent" data-reveal aria-label="Urgenze">
       <span class="urgent__icon" aria-hidden="true">!</span>
       <div class="urgent__text">
         <strong>Hai dolore o un'urgenza?</strong>
-        <span>Chiama la segreteria: per i pazienti dello studio cerchiamo un posto in giornata. <a href="index.html#faq-urgenze">Cosa fare fuori orario →</a></span>
+        <span>Chiama la segreteria: per i pazienti dello studio cerchiamo un posto in giornata. <a href="index.html#faq-urgenze">Cosa fare fuori orario</a> · <a href="guide.html#dente-rotto">Dente rotto o caduto →</a></span>
       </div>
       <a class="btn btn--ghost btn--sm" href="${TEL_HREF}">Chiama ${TEL}</a>
     </aside>`;
@@ -203,6 +221,17 @@ const FAQ = [
   ['faq-detrazione', 'Le cure dentistiche sono detraibili?', 'Sì, rientrano nelle spese sanitarie detraibili al 19% per la parte che supera la franchigia di 129,11 euro. Conserva la fattura e paga con un metodo tracciabile (carta, bancomat o bonifico).'],
   ['faq-urgenze', 'Cosa faccio se ho dolore fuori orario?', 'Durante gli orari di apertura chiama la segreteria: per i pazienti dello studio cerchiamo un posto in giornata. Fuori orario lascia un messaggio in segreteria e ti richiamiamo alla riapertura. In caso di gonfiore al viso con febbre, difficoltà a deglutire o respirare, o di un trauma importante, rivolgiti subito al Pronto Soccorso o chiama il 112.'],
   ['faq-igiene', 'Ogni quanto va fatta la pulizia dei denti?', 'Di norma ogni 6 mesi. In alcuni casi, per esempio con gengive infiammate, apparecchi o impianti, l\'igienista può consigliare richiami più ravvicinati.'],
+  ['faq-foto', 'Posso mandarvi una foto su WhatsApp prima di prenotare?', 'Sì. Se hai un dente scheggiato, una gengiva gonfia o un dubbio, inviaci una foto su WhatsApp: la segreteria la mostra al dentista, che ti dice se è il caso di venire subito e che visita prenotare. Non è una diagnosi, per quella serve la visita; in caso di dolore forte chiama.'],
+];
+
+// Comfort in poltrona (sedazione cosciente: protossido d'azoto, eseguibile dall'odontoiatra, bambini collaboranti dai 4 anni circa)
+const COMFORT = [
+  ['parla', 'Dillo già al telefono', 'Segniamo in agenda chi ha timore: l\'appuntamento è più lungo e nessuno ha fretta. Prima di iniziare ti spieghiamo cosa faremo.'],
+  ['mano', 'Un segnale per fermarci', 'Alzi la mano e ci fermiamo, sempre. Lo concordiamo prima di cominciare, così sai di avere il controllo.'],
+  ['goccia', 'Gel prima dell\'anestesia', 'Un gel anestetico sulla gengiva rende la puntura appena percettibile. L\'anestesia si fa lentamente, per sentire meno.'],
+  ['respiro', 'Sedazione cosciente', 'Per chi è molto ansioso, una miscela di protossido d\'azoto e ossigeno respirata dal naso: resti sveglio ma rilassato. Si valuta in visita.'],
+  ['cuffie', 'Cuffie e coperta', 'Puoi ascoltare la tua musica durante la seduta e avere una coperta se senti freddo: piccole cose che aiutano a rilassarsi.'],
+  ['orologio', 'Sedute più brevi', 'Se preferisci, dividiamo le cure in più appuntamenti corti invece di uno lungo. Decidi tu il ritmo.'],
 ];
 
 const HOURS = `<dl class="hours">
@@ -220,28 +249,44 @@ page({
   <div class="wrap">
     <div class="hero__grid">
       <div class="hero__text" data-reveal>
-        <span class="eyebrow">Studio odontoiatrico · Milano, zona Wagner</span>
-        <h1 class="hero__title">Cure dentali con calma, spiegate passo dopo passo.</h1>
-        <p class="lead">Siamo uno studio di quartiere dove adulti e bambini vengono ascoltati prima di essere curati. Ogni trattamento parte da una visita, da un piano scritto e dal tempo per fare domande.</p>
+        <span class="eyebrow">Studio dentistico · Milano, zona Wagner</span>
+        <h1 class="hero__title">Il dentista che ti spiega tutto, con calma.</h1>
+        <p class="lead">Igiene, cura della carie, ortodonzia anche invisibile, impianti, visite per i bambini ed estetica dentale. Ogni cura parte da una visita e da un preventivo scritto.</p>
         <div class="hero__actions">
           <a class="btn btn--primary" href="contatti.html#prenota">Prenota una visita</a>
           <a class="hero__tel" href="${TEL_HREF}">oppure chiama lo ${TEL}</a>
         </div>
       </div>
       <div class="photo hero__photo" data-reveal="150">
-        ${img('reception.webp', 'La segreteria dello studio accoglie un paziente all\'ingresso', { eager: true })}
+        ${img('dente-scultura.webp', 'Scultura in ceramica a forma di dente appoggiata su una pietra chiara', { eager: true })}
       </div>
     </div>
     <div class="facts" data-reveal>
-      <div><span>In Via delle Calendule</span><span>dal 2006</span></div>
+      <div><span>Dal 2006</span><span>In Via delle Calendule, M1 Wagner</span></div>
+      <div><span>Fondi sanitari</span><span>In forma diretta e indiretta</span></div>
+      <div><span>Preventivo scritto</span><span>Pagamento anche a rate</span></div>
       <div><span>Orari</span><span>Lun–Ven 9–19:30 · Sab 9–13</span></div>
-      <div><span>Come arrivare</span><span>M1 Wagner, 4 minuti a piedi</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--alt">
+  <div class="wrap">
+    <div class="row-between" data-reveal>
+      <div class="stack" style="max-width:640px">
+        <span class="eyebrow">Trattamenti</span>
+        <h2 class="h2">Di cosa ci occupiamo</h2>
+      </div>
+      <a class="link-u" href="trattamenti.html">Tutti i trattamenti →</a>
+    </div>
+    <div class="cards">
+${TR.map((t, i) => `      <div data-reveal="${(i % 3) * 80}"><a class="card card--photo" href="${t.slug}.html"><div class="card__photo">${img(t.home[0], t.home[1], { sizes: '(max-width: 760px) 100vw, 33vw' })}</div><div class="card__body"><span class="card__top"><span class="card__ico">${icon(t.icon)}</span><span class="card__num">0${i + 1}</span></span><span class="card__title">${t.menu}</span><span class="card__text">${t.short}</span><span class="card__more">Scopri di più →</span></div></a></div>`).join('\n')}
     </div>
     ${URGENT}
   </div>
 </section>
 
-<section class="section section--alt">
+<section class="section">
   <div class="wrap split">
     <div class="photo" style="aspect-ratio:5/4" data-reveal>
       ${img('accoglienza.webp', 'Un papà con la figlia in braccio sorride all\'ingresso dello studio')}
@@ -256,38 +301,38 @@ page({
   </div>
 </section>
 
-<section class="section">
+<section class="section section--alt" id="comfort">
   <div class="wrap">
-    <div class="row-between" data-reveal>
-      <div class="stack" style="max-width:640px">
-        <span class="eyebrow">Trattamenti</span>
-        <h2 class="h2">Di cosa ci occupiamo</h2>
+    <div class="head-row" data-reveal>
+      <div class="stack">
+        <span class="eyebrow">Se hai paura del dentista</span>
+        <h2 class="h2">Comfort in poltrona: ci fermiamo quando vuoi.</h2>
       </div>
-      <a class="link-u" href="trattamenti.html">Tutti i trattamenti →</a>
+      <p class="text" style="max-width:520px">Il timore del dentista è comune e non c'è niente di cui vergognarsi. Questi sono gli accorgimenti che usiamo ogni giorno, per adulti e bambini.</p>
     </div>
-    <div class="cards">
-${TREATMENTS.map(([id, t, d], i) => `      <div data-reveal="${(i % 3) * 80}"><a class="card" href="trattamenti.html#${id}"><span class="card__num">0${i + 1}</span><span class="card__title">${t}</span><span class="card__text">${d}</span><span class="card__more">Scopri di più →</span></a></div>`).join('\n')}
+    <div class="comfort">
+${COMFORT.map(([ic, t, d], i) => `      <div class="comfort__item" data-reveal="${(i % 3) * 80}"><span class="comfort__ico">${icon(ic)}</span><strong>${t}</strong><span>${d}</span></div>`).join('\n')}
     </div>
   </div>
 </section>
 
 <section class="section section--soft">
   <div class="wrap">
-    <div class="stack" style="max-width:680px;margin-bottom:clamp(36px,4vw,56px)" data-reveal>
-      <span class="eyebrow">Il team</span>
-      <h2 class="h2">Tre professionisti, sempre gli stessi volti.</h2>
+    <div class="row-between" data-reveal>
+      <div class="stack" style="max-width:680px">
+        <span class="eyebrow">Il team</span>
+        <h2 class="h2">Tre professionisti, sempre gli stessi volti.</h2>
+      </div>
+      <a class="link-u" href="studio.html">Conosci il team →</a>
     </div>
-    <div class="team">
+    <div class="team team--text">
       <div class="person" data-reveal>
-        <div class="photo">${img('team-valdieri.webp', 'Ritratto del Dott. Lorenzo Valdieri', { sizes: TEAM_SIZES })}</div>
         <div class="stack" style="gap:6px"><span class="person__name">Dott. Lorenzo Valdieri</span><span class="person__role">Odontoiatra · Direttore sanitario</span><span class="person__bio">Laureato a Milano nel 2001, si occupa di conservativa e implantologia.</span></div>
       </div>
       <div class="person" data-reveal="100">
-        <div class="photo">${img('team-ardenghi.webp', 'Ritratto della Dott.ssa Camilla Ardenghi', { sizes: TEAM_SIZES })}</div>
         <div class="stack" style="gap:6px"><span class="person__name">Dott.ssa Camilla Ardenghi</span><span class="person__role">Odontoiatra · Ortodontista</span><span class="person__bio">Specialista in Ortognatodonzia, segue bambini, ragazzi e adulti.</span></div>
       </div>
       <div class="person" data-reveal="200">
-        <div class="photo">${img('team-sorelli.webp', 'Ritratto della Dott.ssa Giulia Sorelli', { sizes: TEAM_SIZES })}</div>
         <div class="stack" style="gap:6px"><span class="person__name">Dott.ssa Giulia Sorelli</span><span class="person__role">Igienista dentale</span><span class="person__bio">Si occupa di igiene professionale, prevenzione ed educazione alla cura a casa.</span></div>
       </div>
     </div>
@@ -365,85 +410,8 @@ ${FAQ.map(([id, q, a]) => `      <details id="${id}"><summary>${q}</summary><p>$
 </section>
 `});
 
-// ---------- TRATTAMENTI ----------
-const TR = [
-  { id: 'igiene', title: 'Igiene e prevenzione', img: 'tr-igiene.webp', alt: 'L\'igienista mostra a una paziente come usare lo spazzolino',
-    cos: 'La seduta di igiene professionale rimuove placca e tartaro dove lo spazzolino non arriva. Include il controllo delle gengive e indicazioni sugli strumenti da usare a casa.',
-    chi: 'Per tutti, adulti e bambini. È particolarmente indicata a chi ha gengive che sanguinano, porta apparecchi o impianti, è in gravidanza o fuma.',
-    come: 'L\'igienista usa ultrasuoni e strumenti manuali, poi lucida le superfici dei denti. Se c\'è sensibilità, si può applicare un anestetico locale in gel o si procede per zone.',
-    dura: 'Circa 45–60 minuti. Di solito si ripete ogni 6 mesi; l\'intervallo può essere diverso in base alla situazione delle gengive.' },
-  { id: 'conservativa', title: 'Conservativa', img: 'tr-conservativa.webp', alt: 'Il dentista parla con una paziente seduta, entrambi sorridenti',
-    cos: 'È la cura dei denti colpiti da carie o scheggiati. Si rimuove la parte danneggiata e si ricostruisce il dente con materiali compositi del colore del dente.',
-    chi: 'Per chi ha una carie individuata durante un controllo, un\'otturazione vecchia da sostituire, sensibilità al freddo o un dente rotto.',
-    come: 'Dopo l\'anestesia locale si isola il dente, si pulisce la cavità e si applica il materiale a strati. Alla fine si controlla che il morso sia corretto.',
-    dura: 'Da 30 a 60 minuti per dente, in una sola seduta. Nelle ricostruzioni più ampie può servire un secondo appuntamento.' },
-  { id: 'ortodonzia', title: 'Ortodonzia, anche invisibile', img: 'tr-ortodonzia.webp', alt: 'Una ragazza e sua madre sorridono in sala d\'attesa',
-    cos: 'Corregge la posizione dei denti e il rapporto tra le arcate. Si usano apparecchi fissi, mobili oppure allineatori trasparenti rimovibili, a seconda del caso.',
-    chi: 'Per bambini dai 6–7 anni, per una prima valutazione della crescita, e per ragazzi e adulti con denti affollati, distanziati o un morso non corretto.',
-    come: 'Si parte da visita, radiografie e scansione digitale delle arcate. L\'ortodontista propone il tipo di apparecchio e segue il trattamento con controlli periodici.',
-    dura: 'In genere da 12 a 24 mesi, con controlli ogni 6–8 settimane. Segue una fase di mantenimento con un contenitore.' },
-  { id: 'implantologia', title: 'Implantologia', img: 'tr-implantologia.webp', alt: 'Il dentista spiega una radiografia sullo schermo a una paziente',
-    cos: 'Un impianto è una piccola vite in titanio inserita nell\'osso al posto della radice di un dente mancante. Sopra si fissa una corona, un ponte o una protesi.',
-    chi: 'Per adulti che hanno perso uno o più denti. L\'indicazione dipende dalla quantità di osso e dallo stato di salute generale, valutati in visita.',
-    come: 'Dopo gli esami radiografici, l\'impianto si inserisce in anestesia locale. Si attende l\'integrazione con l\'osso, poi si realizza e si fissa la corona definitiva.',
-    dura: 'L\'intervento richiede circa un\'ora per impianto. L\'integrazione con l\'osso richiede di norma da 3 a 6 mesi; il percorso si allunga se prima serve rigenerare l\'osso.' },
-  { id: 'pedodonzia', title: 'Pedodonzia', img: 'tr-pedodonzia.webp', alt: 'Un bambino gioca con le costruzioni nell\'angolo bambini della sala d\'attesa',
-    cos: 'È l\'odontoiatria dedicata ai bambini: controlli, prevenzione della carie, sigillature dei solchi e cura dei denti da latte e dei primi permanenti.',
-    chi: 'Per bambini a partire dai 2 anni circa, come consigliano le raccomandazioni del Ministero della Salute. La prima visita è utile anche senza problemi evidenti, per abituare il bambino all\'ambiente.',
-    come: 'Il genitore resta nella stanza. Mostriamo al bambino gli strumenti prima di usarli e procediamo con i suoi tempi; se serve, si divide il lavoro in più appuntamenti brevi.',
-    dura: 'Un controllo richiede circa 30 minuti. Consigliamo una visita ogni 6 mesi.' },
-  { id: 'estetica', title: 'Estetica dentale', img: 'tr-estetica.webp', alt: 'Una ragazza sorride guardandosi allo specchio',
-    cos: 'Comprende lo sbiancamento professionale e le faccette, sottili lamine in ceramica o composito applicate sulla superficie visibile dei denti.',
-    chi: 'Per adulti con denti e gengive in salute che desiderano modificare colore o forma dei denti. Non è indicata in presenza di carie o infiammazioni non curate.',
-    come: 'Dopo una seduta di igiene, lo sbiancamento si esegue in studio o a domicilio con mascherine personalizzate. Le faccette richiedono una scansione e un periodo di prova.',
-    dura: 'Lo sbiancamento in studio richiede una seduta di circa 60–90 minuti; a domicilio 2–3 settimane. Per le faccette servono in genere 3 appuntamenti in un mese.' },
-];
-
-page({
-  file: 'trattamenti.html', active: 'trattamenti',
-  title: 'Trattamenti · Studio Odontoiatrico Lumea',
-  description: 'Igiene, conservativa, ortodonzia, implantologia, pedodonzia ed estetica dentale: a cosa servono, per chi sono, come si svolgono e quanto durano.',
-  body: `
-<section class="page-head">
-  <div class="wrap">
-    <div class="page-head__text" data-reveal>
-      <span class="eyebrow">Trattamenti</span>
-      <h1 class="h1">Cosa facciamo, spiegato in modo semplice.</h1>
-      <p class="lead">Per ogni trattamento trovi a cosa serve, a chi è indicato, come si svolge e quanto dura. Sono informazioni generali: il percorso adatto a te viene definito solo dopo la visita.</p>
-    </div>
-    <nav class="chips" aria-label="Indice dei trattamenti" data-reveal="100">
-${TR.map(t => `      <a class="chip" href="#${t.id}">${t.title.replace(', anche invisibile', '')}</a>`).join('\n')}
-    </nav>
-  </div>
-</section>
-
-<div class="wrap treatments">
-${TR.map((t, i) => `  <article class="treatment" id="${t.id}">
-    <div class="treatment__side" data-reveal>
-      <span class="card__num">0${i + 1}</span>
-      <h2 class="treatment__title">${t.title}</h2>
-      <div class="photo">${img(t.img, t.alt)}</div>
-    </div>
-    <div class="facts-grid" data-reveal="120">
-      <div><h3 class="label">Cos'è</h3><p>${t.cos}</p></div>
-      <div><h3 class="label">Per chi è</h3><p>${t.chi}</p></div>
-      <div><h3 class="label">Come si svolge</h3><p>${t.come}</p></div>
-      <div><h3 class="label">Quanto dura</h3><p>${t.dura}</p></div>
-    </div>
-  </article>`).join('\n')}
-
-  <div class="cta-panel" data-reveal>
-    <div class="stack" style="gap:14px">
-      <h2 class="h2">Non sai quale trattamento ti serve?</h2>
-      <p class="text" style="color:var(--ink-2)">È normale. Si parte sempre da una visita: ti diciamo cosa abbiamo visto e quali sono le possibilità, senza impegno a proseguire.</p>
-    </div>
-    <div class="actions">
-      <a class="btn btn--primary" href="contatti.html#prenota">Prenota una visita</a>
-      <a class="btn btn--ghost" href="${TEL_HREF}">${TEL}</a>
-    </div>
-  </div>
-</div>
-`});
+require('./pagine-trattamenti.js')({ page, img, icon, TR, TEL, TEL_HREF, WA, WA_HREF, SITE });
+require('./pagina-guide.js')({ page, icon, TEL, TEL_HREF });
 
 // ---------- STUDIO E TEAM ----------
 const PEOPLE = [
@@ -508,13 +476,13 @@ ${PEOPLE.map(p => `    <article class="profile">
         <span class="eyebrow">Tecnologie</span>
         <h2 class="h2">Gli strumenti che usiamo, e perché</h2>
       </div>
-      <p class="text" style="max-width:520px;color:var(--ink-2)">Scegliamo le attrezzature pensando a due cose: vedere meglio e rendere le sedute più semplici per chi le affronta.</p>
+      <p class="text" style="max-width:520px;color:var(--ink-2)">Scegliamo le attrezzature pensando a due cose: vedere meglio e rendere le sedute più semplici per chi le affronta. Gli strumenti sono sterilizzati in autoclave di classe B, in buste sigillate con data e ciclo registrati.</p>
     </div>
-    <div class="tech">
-      <div data-reveal><strong>Radiologia digitale</strong><span>Sensori intraorali e ortopantomografo digitale: immagini visibili subito sullo schermo, con esposizioni brevi.</span></div>
-      <div data-reveal="80"><strong>Scanner intraorale</strong><span>Rileva l'impronta delle arcate con una piccola telecamera, al posto delle paste da impronta tradizionali.</span></div>
-      <div data-reveal="160"><strong>Telecamera intraorale</strong><span>Ti permette di vedere sul monitor quello che vede il dentista, così la spiegazione è più chiara.</span></div>
-      <div data-reveal="240"><strong>Sterilizzazione tracciata</strong><span>Autoclave di classe B e buste sigillate con data e ciclo registrati per ogni set di strumenti.</span></div>
+    <div class="tech tech--photo">
+      <div data-reveal><div class="tech__photo">${img('diagnosi-digitale.webp', 'Una radiografia panoramica delle arcate su un visore luminoso', { sizes: TECH_SIZES })}</div><strong>Radiologia digitale</strong><span>Sensori intraorali e ortopantomografo digitale: immagini visibili subito sullo schermo, con esposizioni brevi.</span></div>
+      <div data-reveal="80"><div class="tech__photo">${img('scansione-3d.webp', 'La scansione 3D di un\'arcata dentale sul monitor dello studio', { sizes: TECH_SIZES })}</div><strong>Scanner intraorale</strong><span>Rileva l'impronta delle arcate con una piccola telecamera, al posto delle paste da impronta tradizionali, e te la mostra subito sul monitor.</span></div>
+      <div data-reveal="160"><div class="tech__photo">${img('modello-gesso.webp', 'Un modello in gesso di un\'arcata dentale su un telo di lino', { sizes: TECH_SIZES })}</div><strong>Modelli di studio</strong><span>Per i casi più complessi realizziamo un modello delle arcate: serve a pianificare la cura e a spiegarla tenendola in mano.</span></div>
+      <div data-reveal="240"><div class="tech__photo">${img('kit-igiene.webp', 'Un cassetto con spazzolini, scovolini e fili interdentali da dare ai pazienti', { sizes: TECH_SIZES })}</div><strong>Strumenti per casa su misura</strong><span>Dopo l'igiene ti mostriamo quali strumenti usare (spazzolino, scovolini della misura giusta, filo) e come, in base ai tuoi denti e alle tue gengive.</span></div>
     </div>
   </div>
 </section>
@@ -527,10 +495,10 @@ ${PEOPLE.map(p => `    <article class="profile">
       <p class="text">Lo studio è al piano terra di una palazzina degli anni Trenta, con affaccio su un cortile interno. Ci sono una sala d'attesa con angolo bambini, due sale operative e una sala dedicata ai colloqui.</p>
     </div>
     <div class="gallery">
-      <figure data-reveal><div class="photo">${img('reception.webp', 'La reception in legno chiaro', { sizes: TEAM_SIZES })}</div><figcaption>La reception</figcaption></figure>
-      <figure data-reveal="80"><div class="photo">${img('lettura.webp', 'Una paziente legge una rivista in sala d\'attesa', { sizes: TEAM_SIZES })}</div><figcaption>La sala d'attesa</figcaption></figure>
-      <figure data-reveal="160"><div class="photo">${img('tr-pedodonzia.webp', 'L\'angolo bambini con giochi in legno', { sizes: TEAM_SIZES })}</div><figcaption>L'angolo bambini</figcaption></figure>
-      <figure data-reveal="240"><div class="photo">${img('kit-igiene.webp', 'Un cassetto con spazzolini, fili interdentali e kit per la cura dei denti a casa', { sizes: TEAM_SIZES })}</div><figcaption>I kit per la cura a casa</figcaption></figure>
+      <figure data-reveal><div class="photo">${img('reception.webp', 'La reception in legno chiaro', { sizes: GALLERY_SIZES })}</div><figcaption>La reception</figcaption></figure>
+      <figure data-reveal="80"><div class="photo">${img('sala-operativa.webp', 'Una sala operativa con poltrona odontoiatrica, mobili in legno chiaro e una grande finestra', { sizes: GALLERY_SIZES })}</div><figcaption>Una delle sale operative</figcaption></figure>
+      <figure data-reveal="160"><div class="photo">${img('lettura.webp', 'Una paziente legge una rivista in sala d\'attesa', { sizes: GALLERY_SIZES })}</div><figcaption>La sala d'attesa</figcaption></figure>
+      <figure data-reveal="240"><div class="photo">${img('tr-pedodonzia.webp', 'L\'angolo bambini con giochi in legno', { sizes: GALLERY_SIZES })}</div><figcaption>L'angolo bambini</figcaption></figure>
     </div>
     <div class="closing" data-reveal>
       <p>Vuoi conoscerci prima di iniziare? Prenota una prima visita.</p>
@@ -650,6 +618,7 @@ page({
         <a class="ccard ccard--soft" href="${TEL_HREF}"><small>Telefono</small><span class="ccard__big">${TEL}</span><small>Segreteria 9:00–19:00</small></a>
         <a class="ccard ccard--alt" href="${WA_HREF}" target="_blank" rel="noopener"><small>WhatsApp</small><span class="ccard__big">${WA}</span><small>Solo messaggi, rispondiamo in giornata</small></a>
       </div>
+      <div class="photo-consult" data-reveal="130"><span class="photo-consult__ico">${icon('foto')}</span><div class="stack" style="gap:6px"><strong>Un dubbio? Mandaci una foto</strong><span>Su WhatsApp puoi inviarci la foto del dente o della gengiva che ti preoccupa: il dentista la guarda e ti diciamo se è il caso di venire subito e che visita prenotare. Non è una diagnosi: per quella serve la visita.</span><a href="${WA_HREF}" target="_blank" rel="noopener">Scrivi su WhatsApp →</a></div></div>
       <div class="ccard ccard--line" data-reveal="160"><small>Email</small><a href="mailto:${EMAIL}">${EMAIL}</a></div>
       <div class="box" data-reveal="220"><span class="box__title">Orari dello studio</span>
         ${HOURS}

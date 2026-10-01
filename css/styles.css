@@ -86,11 +86,12 @@ h1,h2,h3,p{margin:0}
   .menu-toggle{display:flex}
   .mobile-bar{display:grid}
   .site-footer{padding-bottom:84px}
-  /* su telefono: header sempre visibile ma DENTRO la pagina (sticky, sfondo pieno, niente blur):
+  /* su telefono: header in cima nel flusso della pagina, fisso solo dopo averlo superato (js/main.js), sfondo pieno, niente blur:
      occupa il suo spazio in cima e non può coprire il testo. Gli header fixed su iPhone si
      spostavano con la barra di Safari. */
   .header-spacer{display:none}
-  .site-header{position:sticky;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .site-header{position:relative;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .header-stuck .site-header{position:fixed;top:0;left:0;right:0}
 }
 
 /* Reveal leggero */

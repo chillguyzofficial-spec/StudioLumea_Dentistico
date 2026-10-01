@@ -10,7 +10,7 @@ const WA = '000 000 0000', WA_HREF = 'https://wa.me/390000000000';
 const EMAIL = 'segreteria@studiolumea.example';
 const ADDR = 'Via delle Calendule 12, 20145 Milano';
 const MAP_LINK = 'https://www.openstreetmap.org/?mlat=45.4679&amp;mlon=9.1560#map=17/45.4679/9.1560';
-const V = '9'; // cache-busting css/js
+const V = '10'; // cache-busting css/js
 // Indirizzo pubblico del sito (da compilare quando sarà online): serve per l'anteprima dei link (og:image vuole un URL assoluto)
 const SITE = 'https://chillguyzofficial-spec.github.io/StudioLumea_Dentistico/';
 

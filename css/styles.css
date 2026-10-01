@@ -86,10 +86,11 @@ h1,h2,h3,p{margin:0}
   .menu-toggle{display:flex}
   .mobile-bar{display:grid}
   .site-footer{padding-bottom:84px}
-  /* su telefono: header in cima alla pagina che scorre via con lei. Gli header fissi su iPhone
-     (Safari) si spostano quando la barra degli indirizzi si apre/chiude e coprono il testo in cima.
-     Chiama/Prenota restano sempre raggiungibili nella barra in basso. */
-  .site-header{position:absolute;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+  /* su telefono: header sempre visibile ma DENTRO la pagina (sticky, sfondo pieno, niente blur):
+     occupa il suo spazio in cima e non può coprire il testo. Gli header fixed su iPhone si
+     spostavano con la barra di Safari. */
+  .header-spacer{display:none}
+  .site-header{position:sticky;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
 }
 
 /* Reveal leggero */

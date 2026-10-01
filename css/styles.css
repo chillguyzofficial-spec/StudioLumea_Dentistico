@@ -86,15 +86,16 @@ h1,h2,h3,p{margin:0}
   .menu-toggle{display:flex}
   .mobile-bar{display:grid}
   .site-footer{padding-bottom:84px}
-  /* su telefono: header pieno (niente blur, che su iOS sfarfalla durante lo scroll) e a scomparsa */
-  .site-header{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;transition:transform .3s ease}
-  .site-header.is-hidden{transform:translateY(-100%)}
+  /* su telefono: header in cima alla pagina che scorre via con lei. Gli header fissi su iPhone
+     (Safari) si spostano quando la barra degli indirizzi si apre/chiude e coprono il testo in cima.
+     Chiama/Prenota restano sempre raggiungibili nella barra in basso. */
+  .site-header{position:absolute;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
 }
 
 /* Reveal leggero */
 .js [data-reveal]{opacity:0;transform:translateY(16px);transition:opacity .9s ease,transform .9s ease}
 .js [data-reveal].is-in{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.js [data-reveal]{opacity:1;transform:none;transition:none}.site-header{transition:none}}
+@media (prefers-reduced-motion:reduce){.js [data-reveal]{opacity:1;transform:none;transition:none}}
 
 /* Home: hero */
 .hero{padding:clamp(40px,7vw,96px) 0 clamp(64px,8vw,112px)}

@@ -28,6 +28,24 @@
   // ritorno con il tasto Indietro (bfcache): stato pulito
   window.addEventListener('pageshow', function (e) { if (e.persisted) setMenu(false); });
 
+  // Header a scomparsa su telefono: si nasconde scorrendo in giù, ricompare appena si risale
+  var header = document.querySelector('.site-header');
+  var mobileMq = window.matchMedia('(max-width: 959px)');
+  var lastY = window.scrollY, ticking = false;
+  function onScroll() {
+    ticking = false;
+    var y = window.scrollY, dy = y - lastY;
+    if (!mobileMq.matches || y < 80 || (menu && menu.classList.contains('is-open'))) header.classList.remove('is-hidden');
+    else if (dy > 6) header.classList.add('is-hidden');
+    else if (dy < -6) header.classList.remove('is-hidden');
+    if (Math.abs(dy) > 6 || y < 80) lastY = y;
+  }
+  if (header) {
+    window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+    header.addEventListener('focusin', function () { header.classList.remove('is-hidden'); });
+    mobileMq.addEventListener('change', function () { header.classList.remove('is-hidden'); });
+  }
+
   // Comparsa leggera allo scroll
   var items = document.querySelectorAll('[data-reveal]');
   if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {

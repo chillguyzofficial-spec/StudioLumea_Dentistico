@@ -343,6 +343,10 @@ a.ccard:hover{transform:translateY(-2px);color:var(--ink)}
   .cal__dow,.cal__grid{gap:3px}
   .cal__day{font-size:15px;border-radius:10px}
 }
+/* S73: su telefono le celle quadrate restavano 32-38px; altezza fissa 44px (area di tocco consigliata) */
+@media (max-width:480px){
+  .cal__day{aspect-ratio:auto;height:44px}
+}
 /* FAQ: la freccia ruotata sporgeva di qualche px oltre il bordo */
 .faq summary::after{margin-right:4px}
 /* aree da toccare più comode su telefono (senza cambiare l'aspetto) */
@@ -445,3 +449,6 @@ a.ccard:hover{transform:translateY(-2px);color:var(--ink)}
 @media (max-width:389px){.site-header .brand__sub{display:none}}
 /* tra 960 e 1120px il menu completo non ci sta: voci più compatte */
 @media (min-width:960px) and (max-width:1120px){.nav{gap:18px}.nav__link{font-size:15px}.nav .btn{padding:10px 18px;font-size:15px}.site-header .brand__sub{display:none}}
+/* S73: a 480px due colonne da 180px non contenevano l'email (pagina che scorreva di lato) */
+.footer-cols{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+.footer-cols a[href^="mailto:"]{overflow-wrap:anywhere}

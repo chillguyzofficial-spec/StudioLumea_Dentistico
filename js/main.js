@@ -10,11 +10,10 @@
     menu.classList.toggle('is-open', open);
     menu.setAttribute('aria-hidden', open ? 'false' : 'true');
     if (openBtn) openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    // blocco scroll su html+body (iOS ignora il solo body)
+    // blocco scroll solo su html: sul body l'header sticky tornerebbe in cima alla pagina (menu sparito a metà pagina)
     root.style.overflow = open ? 'hidden' : '';
-    document.body.style.overflow = open ? 'hidden' : '';
-    if (open) { var c = menu.querySelector('[data-menu-close]'); if (c) c.focus(); }
-    else if (openBtn) openBtn.focus();
+    if (open) { var c = menu.querySelector('[data-menu-close]'); if (c) c.focus({ preventScroll: true }); }
+    else if (openBtn) openBtn.focus({ preventScroll: true }); // senza preventScroll la pagina risaliva di mezzo schermo chiudendo il menu
   }
   if (openBtn) openBtn.addEventListener('click', function () { setMenu(true); });
   document.querySelectorAll('[data-menu-close]').forEach(function (el) {
